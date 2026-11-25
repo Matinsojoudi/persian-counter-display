@@ -30,15 +30,34 @@ function createControl() {
   control.on('closed', () => { if (display && !display.isDestroyed()) display.close(); });
 }
 function openDisplay() {
-  if (display && !display.isDestroyed()) { display.focus(); return { external: screen.getAllDisplays().length > 1 }; }
   const primary = screen.getPrimaryDisplay();
   const external = screen.getAllDisplays().find(d => d.id !== primary.id);
   const target = external || primary;
+  if (display && !display.isDestroyed()) {
+    const current = screen.getDisplayMatching(display.getBounds());
+    if (current.id !== target.id) {
+      display.setFullScreen(false);
+      display.setBounds(target.bounds);
+    }
+    if (external && !display.isFullScreen()) display.setFullScreen(true);
+    display.focus();
+    return { external: screen.getDisplayMatching(display.getBounds()).id !== primary.id };
+  }
   display = new BrowserWindow({ ...target.bounds, fullscreen: Boolean(external), backgroundColor: '#111b1c', ...options() });
   secure(display); display.loadFile(path.join(__dirname, 'display.html'));
   return { external: Boolean(external) };
 }
 function controlOnly(event) { if (!control || event.sender !== control.webContents || event.senderFrame !== control.webContents.mainFrame) throw new Error('درخواست غیرمجاز است.'); }
+const hasLock = app.requestSingleInstanceLock();
+if (!hasLock) app.quit();
+else {
+app.on('second-instance', () => {
+  if (control && !control.isDestroyed()) {
+    if (control.isMinimized()) control.restore();
+    control.show();
+    control.focus();
+  }
+});
 app.whenReady().then(() => {
   load(); createControl();
   ipcMain.handle('get-state', event => { if (![control, display].some(w => w && !w.isDestroyed() && event.sender === w.webContents && event.senderFrame === w.webContents.mainFrame)) throw new Error('درخواست غیرمجاز است.'); return { state, warning }; });
@@ -48,3 +67,4 @@ app.whenReady().then(() => {
   app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createControl(); });
 });
 app.on('window-all-closed', () => app.quit());
+}

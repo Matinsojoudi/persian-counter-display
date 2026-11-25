@@ -12,12 +12,13 @@ window.createAudioAdapter = function createAudioAdapter() {
       return new Promise((resolve, reject) => {
         const utterance = new SpeechSynthesisUtterance(new Intl.NumberFormat('fa-IR', { useGrouping: false }).format(number));
         utterance.voice = voice; utterance.lang = voice.lang;
-        currentReject = reject;
-        utterance.onend = () => { currentReject = null; resolve(); };
-        utterance.onerror = () => { currentReject = null; reject(new Error('پخش صدای فارسی ناموفق بود.')); };
-        synth.speak(utterance);
+        const cancel = () => reject(new Error('خواندن متوقف شد.'));
+        currentReject = cancel;
+        utterance.onend = () => { if (currentReject !== cancel) return; currentReject = null; resolve(); };
+        utterance.onerror = () => { if (currentReject !== cancel) return; currentReject = null; reject(new Error('پخش صدای فارسی ناموفق بود.')); };
+        try { synth.speak(utterance); } catch (error) { if (currentReject === cancel) currentReject = null; reject(error); }
       });
     },
-    stop() { if (synth) synth.cancel(); if (currentReject) { const reject = currentReject; currentReject = null; reject(new Error('خواندن متوقف شد.')); } }
+    stop() { const cancel = currentReject; currentReject = null; if (cancel) cancel(); if (synth) synth.cancel(); }
   };
 };

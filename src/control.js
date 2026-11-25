@@ -15,23 +15,26 @@ function errorText(error) { return error.message.replace(/^Error invoking remote
 function stop() { run++; clearTimeout(timer); if (timerResolve) { timerResolve(); timerResolve = null; } audio.stop(); $('read').disabled = false; $('stop').disabled = true; }
 async function saveNumber(event) {
   event.preventDefault();
-  try { stop(); const next = await window.counter.save({ ...state, number: parse('number') }); show(next); fill(next); message('عدد ذخیره شد.'); }
+  try { stop(); const next = await window.counter.save({ ...state, number: parse('number') }); show(next); $('number').value = next.number; message('عدد ذخیره شد.'); }
   catch (error) { message(errorText(error)); }
 }
 async function saveSettings(event) {
   event.preventDefault();
-  try { stop(); const next = await window.counter.save({ ...state, repeats: parse('repeats'), interval: parse('interval') }); show(next); fill(next); message('تنظیمات ذخیره شد.'); }
+  try { stop(); const next = await window.counter.save({ ...state, repeats: parse('repeats'), interval: parse('interval') }); show(next); $('repeats').value = next.repeats; $('interval').value = next.interval; message('تنظیمات ذخیره شد.'); }
   catch (error) { message(errorText(error)); }
 }
 $('number-form').addEventListener('submit', saveNumber);
 $('settings-form').addEventListener('submit', saveSettings);
-$('increment').addEventListener('click', async () => { try { stop(); const next = await window.counter.increment(); show(next); fill(next); message('عدد افزایش یافت.'); } catch (error) { message(errorText(error)); } });
+$('increment').addEventListener('click', async () => { try { stop(); const next = await window.counter.increment(); show(next); $('number').value = next.number; message('عدد افزایش یافت.'); } catch (error) { message(errorText(error)); } });
 $('display').addEventListener('click', async () => { try { const result = await window.counter.openDisplay(); message(result.external ? 'پنجره نمایش روی نمایشگر دوم باز شد.' : 'نمایشگر دوم پیدا نشد؛ پنجره روی نمایشگر اصلی باز شد.'); } catch (error) { message(errorText(error)); } });
 $('stop').addEventListener('click', () => { stop(); message('خواندن متوقف شد.'); });
 $('read').addEventListener('click', async () => {
   if (!audio.available()) { message('صدای فارسی سیستم پیدا نشد. صدای فارسی نصب کنید یا منابع Q-Taraz را ادغام کنید.'); return; }
-  const token = ++run, snapshot = { ...state }; $('read').disabled = true; $('stop').disabled = false;
+  const token = ++run; $('read').disabled = true; $('stop').disabled = false;
   try {
+    const snapshot = await window.counter.save({ number: parse('number'), repeats: parse('repeats'), interval: parse('interval') });
+    if (token !== run) return;
+    show(snapshot);
     for (let i = 0; i < snapshot.repeats; i++) {
       if (token !== run) return;
       message(`در حال خواندن ${fmt.format(i + 1)} از ${fmt.format(snapshot.repeats)}.`);
