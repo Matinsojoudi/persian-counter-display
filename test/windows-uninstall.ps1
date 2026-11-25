@@ -18,7 +18,7 @@ $installDir = Split-Path -Parent $uninstaller
 $application = Join-Path $installDir 'Persian Counter.exe'
 if (-not (Test-Path -LiteralPath $application -PathType Leaf)) { throw 'Installed application not found.' }
 
-# Settings are deliberately preserved by default; exercise uninstall then reinstall.
+# Verify that uninstall preserves user settings by default.
 $settingsDir = Join-Path $env:APPDATA 'persian-counter-display'
 New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null
 $sentinel = Join-Path $settingsDir 'uninstall-preservation-test.txt'
