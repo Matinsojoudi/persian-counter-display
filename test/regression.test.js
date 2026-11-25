@@ -35,6 +35,17 @@ test('read saves visible inputs and failed validation preserves input', async ()
 });
 
 
+test('increment updates number and announces the incremented value', async () => {
+  const elements = {};
+  for (const id of ['number','repeats','interval','number-form','settings-form','increment','display','stop','read','current','status','color','font']) elements[id] = { value: '', disabled: false, textContent: '', style: {}, dataset: {}, addEventListener(_, fn) { this.handler = fn; } };
+  const initial = { number: 41, repeats: 1, interval: 0, color: '#ffffff', font: 'vazirmatn' }; const played = [];
+  const window = { createAudioAdapter: () => ({ available: () => true, play: async n => { played.push(n); }, stop() {} }), counter: { onState() {}, getState: async () => ({ state: initial }), increment: async () => ({ ...initial, number: 42 }) } };
+  vm.runInNewContext(source('control.js'), { window, document: { getElementById: id => elements[id] }, Intl, setTimeout, clearTimeout });
+  await new Promise(resolve => setImmediate(resolve));
+  await elements.increment.handler();
+  assert.equal(elements.number.value, 42); assert.deepEqual(played, [42]);
+});
+
 test('appearance selection saves and updates preview', async () => {
   const elements = {};
   for (const id of ['number','repeats','interval','number-form','settings-form','increment','display','stop','read','current','status','color','font']) elements[id] = { value: '', disabled: false, textContent: '', style: {}, dataset: {}, addEventListener(_, fn) { this.handler = fn; } };

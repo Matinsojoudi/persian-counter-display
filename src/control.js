@@ -25,7 +25,27 @@ async function saveSettings(event) {
 }
 $('number-form').addEventListener('submit', saveNumber);
 $('settings-form').addEventListener('submit', saveSettings);
-$('increment').addEventListener('click', async () => { try { stop(); const next = await window.counter.increment(); show(next); $('number').value = next.number; message('عدد افزایش یافت.'); } catch (error) { message(errorText(error)); } });
+$('increment').addEventListener('click', async () => {
+  if ($('increment').disabled) return;
+  stop(); const token = run; $('increment').disabled = true; let incrementPending = true;
+  try {
+    const next = await window.counter.increment();
+    show(next); $('number').value = next.number;
+    incrementPending = false; $('increment').disabled = false;
+    if (token !== run) return;
+    if (!audio.available()) { message('عدد افزایش یافت؛ پخش صوت در دسترس نیست.'); return; }
+    $('read').disabled = true; $('stop').disabled = false;
+    for (let i = 0; i < next.repeats; i++) {
+      if (token !== run) return;
+      message(`در حال خواندن ${fmt.format(i + 1)} از ${fmt.format(next.repeats)}.`);
+      await audio.play(next.number);
+      if (token !== run) return;
+      if (i + 1 < next.repeats) await new Promise(resolve => { timerResolve = resolve; timer = setTimeout(() => { timerResolve = null; resolve(); }, next.interval * 1000); });
+    }
+    if (token === run) message('خواندن پایان یافت.');
+  } catch (error) { if (token === run) message(errorText(error)); }
+  finally { if (incrementPending) $('increment').disabled = false; if (token === run) { $('read').disabled = false; $('stop').disabled = true; } }
+});
 $('display').addEventListener('click', async () => { try { const result = await window.counter.openDisplay(); message(result.external ? 'پنجره نمایش روی نمایشگر دوم باز شد.' : 'نمایشگر دوم پیدا نشد؛ پنجره روی نمایشگر اصلی باز شد.'); } catch (error) { message(errorText(error)); } });
 $('stop').addEventListener('click', () => { stop(); message('خواندن متوقف شد.'); });
 async function saveAppearance() {
