@@ -9,7 +9,7 @@ function parse(id) {
   if (!/^\d+$/.test(text)) throw new Error('لطفاً فقط عدد صحیح غیرمنفی وارد کنید.');
   return Number(text);
 }
-function show(next) { state = next; $('current').textContent = fmt.format(next.number); }
+function show(next) { state = next; $('current').textContent = fmt.format(next.number); $('current').style.color = next.color; $('current').dataset.font = next.font; $('color').value = next.color; $('font').value = next.font; }
 function fill(next) { $('number').value = next.number; $('repeats').value = next.repeats; $('interval').value = next.interval; }
 function errorText(error) { return error.message.replace(/^Error invoking remote method '[^']+': Error: /, ''); }
 function stop() { run++; clearTimeout(timer); if (timerResolve) { timerResolve(); timerResolve = null; } audio.stop(); $('read').disabled = false; $('stop').disabled = true; }
@@ -28,11 +28,17 @@ $('settings-form').addEventListener('submit', saveSettings);
 $('increment').addEventListener('click', async () => { try { stop(); const next = await window.counter.increment(); show(next); $('number').value = next.number; message('عدد افزایش یافت.'); } catch (error) { message(errorText(error)); } });
 $('display').addEventListener('click', async () => { try { const result = await window.counter.openDisplay(); message(result.external ? 'پنجره نمایش روی نمایشگر دوم باز شد.' : 'نمایشگر دوم پیدا نشد؛ پنجره روی نمایشگر اصلی باز شد.'); } catch (error) { message(errorText(error)); } });
 $('stop').addEventListener('click', () => { stop(); message('خواندن متوقف شد.'); });
+async function saveAppearance() {
+  try { const next = await window.counter.save({ ...state, color: $('color').value, font: $('font').value }); show(next); message('ظاهر ذخیره شد.'); }
+  catch (error) { show(state); message(errorText(error)); }
+}
+$('color').addEventListener('change', saveAppearance);
+$('font').addEventListener('change', saveAppearance);
 $('read').addEventListener('click', async () => {
   if (!audio.available()) { message('پخش صوت در این سیستم در دسترس نیست.'); return; }
   const token = ++run; $('read').disabled = true; $('stop').disabled = false;
   try {
-    const snapshot = await window.counter.save({ number: parse('number'), repeats: parse('repeats'), interval: parse('interval') });
+    const snapshot = await window.counter.save({ ...state, number: parse('number'), repeats: parse('repeats'), interval: parse('interval') });
     if (token !== run) return;
     show(snapshot);
     for (let i = 0; i < snapshot.repeats; i++) {

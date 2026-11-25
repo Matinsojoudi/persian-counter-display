@@ -1,6 +1,6 @@
 {
   "name": "persian-counter-display",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Persian two-screen counter and number announcement",
   "main": "src/main.js",
   "private": true,
@@ -16,9 +16,26 @@
   "build": {
     "appId": "ir.persiancounter.display",
     "productName": "Persian Counter",
-    "files": ["src/**/*", "package.json"],
-    "directories": { "output": "dist" },
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
