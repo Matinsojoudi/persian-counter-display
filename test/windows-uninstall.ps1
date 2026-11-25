@@ -7,8 +7,7 @@ $process = Start-Process -FilePath $installer[0].FullName -ArgumentList '/S', '/
 if ($process.ExitCode -ne 0) { throw "Installer returned $($process.ExitCode)." }
 
 $registry = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
-$version = (Get-Content -LiteralPath 'package.json' -Raw | ConvertFrom-Json).version
-$displayName = "Persian Counter $version"
+$displayName = (Get-Content -LiteralPath 'package.json' -Raw | ConvertFrom-Json).build.nsis.uninstallDisplayName
 $entry = @(Get-ItemProperty $registry -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq $displayName })
 if ($entry.Count -ne 1) { throw "Expected one Persian Counter uninstall entry; found $($entry.Count)." }
 if ($entry[0].QuietUninstallString -notmatch '^"([^"]+\.exe)"(?:\s+(.*))?$') { throw 'Unexpected quiet uninstall command.' }
