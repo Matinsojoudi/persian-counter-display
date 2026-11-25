@@ -1,6 +1,6 @@
 {
   "name": "persian-counter-display",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Persian two-screen counter and number announcement",
   "main": "src/main.js",
   "private": true,
@@ -35,7 +35,8 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "uninstallDisplayName": "Persian Counter"
     }
   }
 }
