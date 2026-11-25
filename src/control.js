@@ -29,7 +29,7 @@ $('increment').addEventListener('click', async () => { try { stop(); const next 
 $('display').addEventListener('click', async () => { try { const result = await window.counter.openDisplay(); message(result.external ? 'پنجره نمایش روی نمایشگر دوم باز شد.' : 'نمایشگر دوم پیدا نشد؛ پنجره روی نمایشگر اصلی باز شد.'); } catch (error) { message(errorText(error)); } });
 $('stop').addEventListener('click', () => { stop(); message('خواندن متوقف شد.'); });
 $('read').addEventListener('click', async () => {
-  if (!audio.available()) { message('صدای فارسی سیستم پیدا نشد. صدای فارسی نصب کنید یا منابع Q-Taraz را ادغام کنید.'); return; }
+  if (!audio.available()) { message('پخش صوت در این سیستم در دسترس نیست.'); return; }
   const token = ++run; $('read').disabled = true; $('stop').disabled = false;
   try {
     const snapshot = await window.counter.save({ number: parse('number'), repeats: parse('repeats'), interval: parse('interval') });

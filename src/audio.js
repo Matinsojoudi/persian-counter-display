@@ -1,24 +1,54 @@
 'use strict';
-// Replace this adapter when licensed Q-Taraz resources are integrated.
-// play(number) resolves after one completed utterance, rejects on failure; stop() cancels.
+// Q-Taraz NumberSpeakerService uses standalone and connecting variants of hundreds/tens.
+// There is no recording for zero, thousand or million; never announce a truncated number.
+window.numberAudioSequence = function numberAudioSequence(number) {
+  if (!Number.isInteger(number) || number < 0) throw new Error('عدد نامعتبر است.');
+  if (number === 0) throw new Error('فایل صوتی صفر در مجموعه Q-Taraz موجود نیست.');
+  if (number > 999) throw new Error('فایل صوتی هزار و میلیون در مجموعه Q-Taraz موجود نیست؛ خواندن فقط از ۱ تا ۹۹۹ پشتیبانی می‌شود.');
+  const result = ['Num.wav'];
+  const hundreds = Math.floor(number / 100) * 100;
+  const remainder = number % 100;
+  if (hundreds) result.push(`${remainder ? '_' : ''}${hundreds}.wav`);
+  if (remainder && remainder <= 19) result.push(`${remainder}.wav`);
+  else if (remainder) {
+    const tens = Math.floor(remainder / 10) * 10;
+    const ones = remainder % 10;
+    result.push(`${ones ? '_' : ''}${tens}.wav`);
+    if (ones) result.push(`${ones}.wav`);
+  }
+  return result;
+};
+
 window.createAudioAdapter = function createAudioAdapter() {
-  const synth = window.speechSynthesis;
-  let currentReject = null;
+  let active = null;
+  let generation = 0;
+  function stop() {
+    generation++;
+    const current = active;
+    active = null;
+    if (current) { current.audio.pause(); current.reject(new Error('خواندن متوقف شد.')); }
+  }
   return {
-    available() { return Boolean(synth && synth.getVoices().some(v => /^fa(?:[-_]|$)/i.test(v.lang))); },
-    play(number) {
-      const voice = synth && synth.getVoices().find(v => /^fa(?:[-_]|$)/i.test(v.lang));
-      if (!voice) return Promise.reject(new Error('صدای فارسی سیستم پیدا نشد. صدای فارسی نصب کنید یا منابع Q-Taraz را ادغام کنید.'));
-      return new Promise((resolve, reject) => {
-        const utterance = new SpeechSynthesisUtterance(new Intl.NumberFormat('fa-IR', { useGrouping: false }).format(number));
-        utterance.voice = voice; utterance.lang = voice.lang;
-        const cancel = () => reject(new Error('خواندن متوقف شد.'));
-        currentReject = cancel;
-        utterance.onend = () => { if (currentReject !== cancel) return; currentReject = null; resolve(); };
-        utterance.onerror = () => { if (currentReject !== cancel) return; currentReject = null; reject(new Error('پخش صدای فارسی ناموفق بود.')); };
-        try { synth.speak(utterance); } catch (error) { if (currentReject === cancel) currentReject = null; reject(error); }
-      });
+    available() { return typeof Audio !== 'undefined'; },
+    async play(number) {
+      const files = window.numberAudioSequence(number);
+      stop();
+      const token = generation;
+      for (const file of files) {
+        if (token !== generation) throw new Error('خواندن متوقف شد.');
+        await new Promise((resolve, reject) => {
+          const audio = new Audio(`assets/numbers/${file}`);
+          const current = { audio, reject };
+          active = current;
+          audio.onended = () => { if (active !== current) return; active = null; resolve(); };
+          audio.onerror = () => { if (active !== current) return; active = null; reject(new Error(`پخش فایل صوتی ${file} ناموفق بود.`)); };
+          try {
+            const playback = audio.play();
+            if (playback && typeof playback.catch === 'function') playback.catch(() => { if (active === current) { active = null; reject(new Error(`پخش فایل صوتی ${file} ناموفق بود.`)); } });
+          } catch (_) { if (active === current) active = null; reject(new Error(`پخش فایل صوتی ${file} ناموفق بود.`)); }
+        });
+      }
     },
-    stop() { const cancel = currentReject; currentReject = null; if (cancel) cancel(); if (synth) synth.cancel(); }
+    stop
   };
 };

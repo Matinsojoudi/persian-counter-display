@@ -8,15 +8,14 @@ const source = name => fs.readFileSync(path.join(__dirname, '..', 'src', name), 
 
 test('late callback from stopped speech cannot cancel newer speech', async () => {
   const utterances = [];
-  class Utterance { constructor(text) { this.text = text; } }
-  const synth = { getVoices: () => [{ lang: 'fa-IR' }], speak: u => utterances.push(u), cancel() {} };
-  const window = { speechSynthesis: synth };
-  vm.runInNewContext(source('audio.js'), { window, SpeechSynthesisUtterance: Utterance, Intl });
+  class Audio { constructor(src) { this.src = src; utterances.push(this); } play() { return Promise.resolve(); } pause() {} }
+  const window = {};
+  vm.runInNewContext(source('audio.js'), { window, Audio });
   const audio = window.createAudioAdapter();
   const first = audio.play(1); const rejection = assert.rejects(first, /متوقف/);
   audio.stop(); await rejection;
   const second = audio.play(2); const secondRejection = assert.rejects(second, /متوقف/);
-  utterances[0].onend(); audio.stop(); await secondRejection;
+  utterances[0].onended(); audio.stop(); await secondRejection;
 });
 
 test('read saves visible inputs and failed validation preserves input', async () => {
